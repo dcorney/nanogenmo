@@ -14,6 +14,8 @@ class MarkovChain(object):
 
     def __init__(self, order):
         self._order = order
+        # self._transitions = defaultdict(int)
+        # self._reverse_transitions = defaultdict(int)
         self._redis = redis.StrictRedis(host='localhost', port=6379, db=0)
         self._symbols = []
 
@@ -27,10 +29,12 @@ class MarkovChain(object):
         for i in range(len(sequence) - self._order):
             node_from = '|'.join(sequence[i:i + self._order]) + ":fwd"
             node_to = sequence[i + self._order]
+            # self._transitions[node_from, node_to] += 1
             self._redis.hincrby(node_from, node_to, 1)
             r_node_from = '|'.join(
                 sequence[i + 1:i + self._order + 1]) + ":back"
             r_node_to = sequence[i]
+            # self._reverse_transitions[r_node_from, r_node_to] += 1
             self._redis.hincrby(r_node_from, r_node_to, 1)
 
     def import_file(self, filename):
@@ -43,6 +47,7 @@ class MarkovChain(object):
         end_point = min(len(in_text), in_text.find(
             "*** END OF THIS PROJECT GUTENBERG EBOOK"))
         trimmed = in_text[start_point:end_point]
+        # mc.train_words(in_text.split())
         self.train_words(tokenizers.tokenize(trimmed))
 
     def import_all(self, path, mc):
@@ -54,16 +59,25 @@ class MarkovChain(object):
         """
         Takes in input a list of words and predicts the next word.
         """
+        # if len(symbol) != self._order:
+        # raise ValueError('Expected string of %d chars, got %d' %
+        # (self._order, len(symbol)))
         node_from = '|'.join(symbols)
         if direction == 'reverse':
+            # probs = [self._reverse_transitions[
+            #    (node_from, s)] for s in self._symbols]
             probs = self._redis.hgetall(node_from + ":back")
         else:
             probs = self._redis.hgetall(node_from + ":fwd")
+            # probs = [self._transitions[(node_from, s)] for s in
+            # self._symbols]
         if (len(probs) == 0):
-            probs = self._redis.hgetall(self._redis.randomkey())
-        weights = [int(x) for x in list(probs.values())]
-        idx = searchsorted(cumsum(weights), rand() * sum(weights))
-        return list(probs.keys())[idx].decode("utf-8")
+            return self._redis.randomkey()
+        else:
+            weights = [int(x) for x in list(probs.values())]
+            idx = searchsorted(cumsum(weights), rand() * sum(weights))
+            return list(probs.keys())[idx].decode("utf-8")
+        # return self._symbols[self._weighted_pick(probs)]
 
     def random_entry(self):
         s = self._redis.randomkey().decode("utf-8")

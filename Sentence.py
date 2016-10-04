@@ -1,16 +1,24 @@
 import re
 
-# to consider... majke this a class, with members: tokens,
+# this is a class, with members: tokens,
 # methods: toString(), score, tokenize
-# plus move the import fns to mc class
+# But should it just be a collection of static fns?
 
 
-class sentences(object):
+class Sentence(object):
 
-    def __init__(self):
-        self._tokens = []
-        self._score = 0
-        self._text = ""
+    def __init__(self, tokens):
+        self._tokens = tokens[1:-1]  # remove first & last tokens (end-markers)
+        self.fix_sentence()
+        self._score = self.evaluate_sentence()
+
+        text = " ".join(self._tokens)
+        b = {"''": '"', " ,": ",", ' .': '.', " 's": "'s", " n't": "n't"}
+        for x, y in b.items():
+            text = text.replace(x, y)
+
+        self._text = text
+        # return {"text": self._text, "score": score}
 
     def fix_sentence(self):
         """
@@ -32,26 +40,15 @@ class sentences(object):
         self._score += (50 - length)
         counter = 0
         for t in self._tokens:
-            if t == '"':
+            if t.strip() == '"' or t.strip() == "''":
                 counter += 1
         if counter % 2 == 1:
-            self._score -= 25
-        print("Has " + str(counter) + " quotes; score " + str(self._score))
+            self._score -= 50
+        # print("Has " + str(counter) + " quotes; score " + str(self._score))
         return self._score
-
-    def form_sentence(self, tokens):
-        self._tokens = tokens[1:-1]  # remove first & last tokens (end-markers)
-        self.fix_sentence()
-        score = self.evaluate_sentence()
-        s2 = " ".join(self._tokens)
-
-        b = {"''": '"', " ,": ",", ' .': '.', " 's": "'s", " n't": "n't"}
-        for x, y in b.items():
-            s2 = s2.replace(x, y)
-
-
-        self._text = s2
-        return {"text": sfinal, "score": score}
 
     def display(self):
         print(self._text + "  (" + str(self._score) + ")")
+
+    def get_text(self):
+        return(self._text)
