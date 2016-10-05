@@ -17,9 +17,28 @@ class MarkovChain(object):
         self._redis = redis.StrictRedis(host='localhost', port=6379, db=0)
         self._symbols = []
 
-    # TODO: build multiple models at once. Example keys: 1:cat:fwd  2:cat|sat:fwd 3:cat|sat|on:fwd
-    # Or just n words with n-1 separators. But store all when training, and replace 'order' with 'max-order'
+    # TODO: build multiple models at once.
+    # Or just n words with n-1 separators. But store all when training, and
+    # replace 'order' with 'max-order'
     def train_words(self, sequence):
+        win_size = 3
+        for idx in range(len(sequence)):
+            start = max(0, idx - win_size)
+            end = idx
+            for sub_idx in range(start, end):
+                node_from = '|'.join(sequence[sub_idx:end]) + ":fwd"
+                node_to = str(sequence[idx])
+                # print(node_from + " -> " + node_to)
+                self._redis.hincrby(node_from, node_to, 1)
+            start = idx + 1
+            end = min(idx + win_size + 1, len(sequence))
+            for sub_idx in range(start + 1, end + 1):
+                node_from = '|'.join(sequence[start:sub_idx]) + ":back"
+                node_to = str(sequence[idx])
+                # print(node_from + " -> " + node_to)
+                self._redis.hincrby(node_from, node_to, 1)
+
+    def train_words_OLD(self, sequence):
         """
         Trains the model using sequence of words.
         """
@@ -45,22 +64,33 @@ class MarkovChain(object):
         trimmed = in_text[start_point:end_point]
         self.train_words(tokenizers.tokenize(trimmed))
 
-    def import_all(self, path, mc):
+    def import_all(self, path):
         for file in os.listdir(path):
             if file.endswith(".txt"):
                 self.import_file(path + file)
 
-    def predict(self, symbols, direction='forward'):
-        """
-        Takes in input a list of words and predicts the next word.
-        """
-        node_from = '|'.join(symbols)
+    def get_probs(self, sequence, direction='forward'):
+        node_from = '|'.join(sequence)
         if direction == 'reverse':
             probs = self._redis.hgetall(node_from + ":back")
         else:
             probs = self._redis.hgetall(node_from + ":fwd")
         if (len(probs) == 0):
-            probs = self._redis.hgetall(self._redis.randomkey())
+            if len(sequence) == 0:
+                probs = self._redis.hgetall(self._redis.randomkey())
+            else:
+                if direction == 'reverse':
+                    sub_seq = sequence[0:-1]
+                else:
+                    sub_seq = sequence[1:]
+                probs = self.get_probs(sub_seq, direction)
+        return probs
+
+    def predict(self, sequence, direction='forward'):
+        """
+        Takes in input a list of words and predicts the next word.
+        """
+        probs = self.get_probs(sequence, direction)
         weights = [int(x) for x in list(probs.values())]
         idx = searchsorted(cumsum(weights), rand() * sum(weights))
         return list(probs.keys())[idx].decode("utf-8")

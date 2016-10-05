@@ -4,16 +4,13 @@ import paragraphs
 
 
 def main():
-    # path = '/Users/dcorney/Documents/books/'
-
     mcW = mc.MarkovChain(order=3)
+    # path = '/Users/dcorney/Documents/books/'
     # mcW.import_all(path)
-    seq = mcW.generate_sentence(mcW.random_entry())
-    # res = sentences.form_sentence(seq)
 
     print("Example sentence:")
+    seq = mcW.generate_sentence(mcW.random_entry())
     s = Sentence.Sentence(seq)
-    # print(res)
     s.display()
 
     print("Three postitve-scoring sentences:")
@@ -27,9 +24,13 @@ def main():
 
     print("Paragraph from 3 seeds:")
     seq = [["the", "cat", "was"], ["the", "man", "was"], ["if", "only", "once"]]
-    p =  paragraphs.seq_to_para(seq,mcW)
+    p = paragraphs.seq_to_para(seq, mcW)
     print(p)
 
+    print("Paragraph from 3 phrases")
+    p = paragraphs.phrases_to_para(
+        ["the cat was", "the man was", "if only once"], mcW)
+    print(p)
 
 if __name__ == '__main__':
     main()
