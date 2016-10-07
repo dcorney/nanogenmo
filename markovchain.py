@@ -104,16 +104,13 @@ class MarkovChain(object):
         Uses seed token-list as 'middle' of new sentence, growing it
         until it starts & ends with 'end' tokens
         """
-        result = start
+        result = list(start)  # make a copy of start so we don't mutate it
         while result[-1] != END_TOKEN:
-            new = self.predict(start)
+            new = self.predict(result[-self._order:])
             result.append(new)
-            start = result[-self._order:]
-        start = result[0:self._order]
         while result[0] != START_TOKEN:
-            new = self.predict(start, direction='reverse')
+            new = self.predict(result[0:self._order], direction='reverse')
             result.insert(0, new)
-            start = result[0:self._order]
         return result
 
     @staticmethod
