@@ -6,6 +6,7 @@ from util import START_TOKEN, END_TOKEN
 import tokenizers
 import os
 import redis
+import re
 
 
 class MarkovChain(object):
@@ -16,6 +17,10 @@ class MarkovChain(object):
         self._order = order
         self._redis = redis.StrictRedis(host='localhost', port=6379, db=0)
         self._symbols = []
+        self._ner_sf = {"ORGANIZATION": [], "PERSON": [], "LOCATION": []}
+
+    def delete_all_in_redis_careful(self):
+        self._redis.flushdb()
 
     # TODO: build multiple models at once.
     # Or just n words with n-1 separators. But store all when training, and
@@ -38,6 +43,16 @@ class MarkovChain(object):
                 # print(node_from + " -> " + node_to)
                 self._redis.hincrby(node_from, node_to, 1)
 
+    def append_ner(self, entities):
+        self._ner_sf['ORGANIZATION'] += entities['ORGANIZATION']
+        self._ner_sf['PERSON'] += entities['PERSON']
+        self._ner_sf['LOCATION'] += entities['LOCATION']
+
+    def ner_report(self, n=5):
+        print(self._ner_sf['PERSON'][0:n])
+        print(self._ner_sf['ORGANIZATION'][0:n])
+        print(self._ner_sf['LOCATION'][0:n])
+
     def train_words_OLD(self, sequence):
         """
         Trains the model using sequence of words.
@@ -51,23 +66,6 @@ class MarkovChain(object):
                 sequence[i + 1:i + self._order + 1]) + ":back"
             r_node_to = sequence[i]
             self._redis.hincrby(r_node_from, r_node_to, 1)
-
-    def import_file(self, filename):
-        with open(filename, 'r') as myfile:
-            in_text = myfile.read().replace('\n', ' ')
-        start_point = max(0, in_text.find(
-            "*** START OF THIS PROJECT GUTENBERG EBOOK"))
-        if start_point > 0:
-            start_point += len("*** START OF THIS PROJECT GUTENBERG EBOOK")
-        end_point = min(len(in_text), in_text.find(
-            "*** END OF THIS PROJECT GUTENBERG EBOOK"))
-        trimmed = in_text[start_point:end_point]
-        self.train_words(tokenizers.tokenize(trimmed))
-
-    def import_all(self, path):
-        for file in os.listdir(path):
-            if file.endswith(".txt"):
-                self.import_file(path + file)
 
     def get_probs(self, sequence, direction='forward'):
         node_from = '|'.join(sequence)
@@ -99,6 +97,19 @@ class MarkovChain(object):
         s = self._redis.randomkey().decode("utf-8")
         return s[0:s.rfind(":")].split("|")
 
+    def fill_sf(self, token):
+        if token == '<PERSON>':
+            return random.choice(self._ner_sf['PERSON'])
+        if token == '<ORGANIZATION>':
+            return random.choice(self._ner_sf['ORGANIZATION'])
+        if token == '<LOCATION>':
+            return random.choice(self._ner_sf['LOCATION'])
+        return token
+
+    def polish_sentence(self, sentence):
+        polished = [self.fill_sf(t) for t in sentence]
+        return polished
+
     def generate_sentence(self, start):
         """
         Uses seed token-list as 'middle' of new sentence, growing it
@@ -111,6 +122,7 @@ class MarkovChain(object):
         while result[0] != START_TOKEN:
             new = self.predict(result[0:self._order], direction='reverse')
             result.insert(0, new)
+        result = self.polish_sentence(result)
         return result
 
     @staticmethod
