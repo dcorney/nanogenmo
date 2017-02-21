@@ -17,7 +17,9 @@ class MarkovChain(object):
         self._order = order
         self._redis = redis.StrictRedis(host='localhost', port=6379, db=0)
         self._symbols = []
-        self._ner_sf = {"ORGANIZATION": [], "PERSON": [], "LOCATION": []}
+        self._ner_per = "PERSON"
+        self._ner_org = "ORGANIZATION"
+        self._ner_loc = "LOCATION"
 
     def delete_all_in_redis_careful(self):
         self._redis.flushdb()
@@ -44,14 +46,14 @@ class MarkovChain(object):
                 self._redis.hincrby(node_from, node_to, 1)
 
     def append_ner(self, entities):
-        self._ner_sf['ORGANIZATION'] += entities['ORGANIZATION']
-        self._ner_sf['PERSON'] += entities['PERSON']
-        self._ner_sf['LOCATION'] += entities['LOCATION']
+        for ner_type in [self._ner_per, self._ner_org, self._ner_loc]:
+            for entity in entities[ner_type]:
+                self._redis.rpush(ner_type, entity)
 
-    def ner_report(self, n=5):
-        print(self._ner_sf['PERSON'][0:n])
-        print(self._ner_sf['ORGANIZATION'][0:n])
-        print(self._ner_sf['LOCATION'][0:n])
+    def ner_report(self, n=2):
+        print(self._redis.lrange(self._ner_per, 0, n))
+        print(self._redis.lrange(self._ner_org, 0, n))
+        print(self._redis.lrange(self._ner_loc, 0, n))
 
     def train_words_OLD(self, sequence):
         """
@@ -99,11 +101,14 @@ class MarkovChain(object):
 
     def fill_sf(self, token):
         if token == '<PERSON>':
-            return random.choice(self._ner_sf['PERSON'])
+            idx = random.randint(0, self._redis.llen(self._ner_per) - 1)
+            return self._redis.lindex(self._ner_per, idx).decode('UTF-8')
         if token == '<ORGANIZATION>':
-            return random.choice(self._ner_sf['ORGANIZATION'])
+            idx = random.randint(0, self._redis.llen(self._ner_org) - 1)
+            return self._redis.lindex(self._ner_org, idx).decode('UTF-8')
         if token == '<LOCATION>':
-            return random.choice(self._ner_sf['LOCATION'])
+            idx = random.randint(0, self._redis.llen(self._ner_loc) - 1)
+            return self._redis.lindex(self._ner_loc, idx).decode('UTF-8')
         return token
 
     def polish_sentence(self, sentence):

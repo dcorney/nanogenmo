@@ -26,22 +26,23 @@ def test():
 
 def main():
     mcW = mc.MarkovChain(order=3)
-    mcW.delete_all_in_redis_careful()
-    tl = text_loader.TextLoader(mcW)
-    tl.import_file_s3("108")
-    tl.import_file_s3("139")
-    mcW.ner_report()
+    # mcW.delete_all_in_redis_careful()
+    # tl = text_loader.TextLoader(mcW)
+    # tl.import_file_s3("103")
+    # tl.import_file_s3("108")
+    # tl.import_file_s3("139")
+    # mcW.ner_report()
     # path = '/Users/dcorney/Documents/books/'
     # tl.import_all(path)
 
-    print("\nSome postitve-scoring sentences:")
-    for i in range(5):
-        score = -1
-        while score < 0:
-            seq = mcW.generate_sentence(mcW.random_entry())
-            s = Sentence.Sentence(seq)
-            score = s._score
-        s.display()
+    # print("\nSome postitve-scoring sentences:")
+    # for i in range(5):
+    #     score = -1
+    #     while score < 0:
+    #         seq = mcW.generate_sentence(mcW.random_entry())
+    #         s = Sentence.Sentence(seq)
+    #         score = s._score
+    #     s.display()
 
     # print("\nParagraph from 3 phrases")
     # p = paragraphs.phrases_to_para(
@@ -56,11 +57,11 @@ def main():
     # print("\nParagraphs from wikipedia scraping...")
     # TODO replace this with a string of nouns/verbs using POS tagger, from
     # some other source...
-    # phrase = "London safe travel train aeroplane ship danger death murder rescue return safe London"
-    # for word in phrase.split(" "):
-    #     seeds = paragraphs.phrases_from_wiki(word, 3, random.randint(3, 10))
-    #     p = paragraphs.phrases_to_para(seeds, mcW)
-    #     print("  " + p)
+    phrase = "London safe travel train aeroplane ship danger death murder rescue return safe London"
+    for word in phrase.split(" "):
+        seeds = paragraphs.phrases_from_wiki(word, 3, random.randint(3, 10))
+        p = paragraphs.phrases_to_para(seeds, mcW)
+        print("  " + p)
 #    story.phrase_to_blog("test", story.phrase(), mcW)
 
 

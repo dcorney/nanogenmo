@@ -56,8 +56,6 @@ def tokens_to_types(merged_tags):
         else:
             examples[ner_type].append(token)
             tokens.append("<" + ner_type + ">")
-    # print(" ".join(tokens))
-    # print(examples)
     return {'tokens': tokens, 'entities': examples}
 
 
@@ -78,38 +76,26 @@ def tokenize(text):
     Also tags entities and returns list of surface forms.
     """
     sents = sent_tokenize(text)
-    # all_tokens = [tokenize_sentence(s) for s in sents]
     flattened_tokens = []
-    # all_tokens = []
     count = 0
     merged_entities = {"ORGANIZATION": [], "PERSON": [], "LOCATION": []}
     for s in sents:
         # all_tokens.append(tokenize_sentence(s))
         tokens_entities = tokenize_sentence(s)
-        tokens = tokens_entities['tokens']
-        entities = tokens_entities['entities']
-        flattened_tokens += (tokens)
-        merged_entities['ORGANIZATION'] += entities['ORGANIZATION']
-        merged_entities['PERSON'] += entities['PERSON']
-        merged_entities['LOCATION'] += entities['LOCATION']
+        if count > 10:
+            tokens = tokens_entities['tokens']
+            entities = tokens_entities['entities']
+            flattened_tokens += (tokens)
+            merged_entities['ORGANIZATION'] += entities['ORGANIZATION']
+            merged_entities['PERSON'] += entities['PERSON']
+            merged_entities['LOCATION'] += entities['LOCATION']
         count += 1
         if count % 25 == 0:
             print('Progress: {} / {}'.format(count, len(sents)))
             print(s)
             print(tokens)
             print(entities)
-        if count > 500:
+        if count > 75:
             break
-        
-    # flattened_tokens = [item for sublist in all_tokens for item in sublist['tokens']]
-    # flattened_entities = [sublist['entities'] for sublist in all_tokens]
-
-    # merged_entities = {"ORGANIZATION": [], "PERSON": [], "LOCATION": []}
-    # for i in flattened_entities:
-    #     merged_entities['ORGANIZATION'] += i['ORGANIZATION']
-    #     merged_entities['PERSON'] += i['PERSON']
-    #     merged_entities['LOCATION'] += i['LOCATION']
-#    flattened_entities =  [item['entities'] for item in all_tokens]
-    # this should be a merge of all the entity sets found in each sentence
     return {'tokens': flattened_tokens, 'entities': merged_entities}
 
