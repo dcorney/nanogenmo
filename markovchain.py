@@ -96,7 +96,11 @@ class MarkovChain(object):
         return list(probs.keys())[idx].decode("utf-8")
 
     def random_entry(self):
-        s = self._redis.randomkey().decode("utf-8")
+        "Make sure random entry is not a special token (e.g. sentence-start)"
+        while True:
+            s = self._redis.randomkey().decode("utf-8")
+            if not(s.startswith(START_TOKEN) or s.startswith(END_TOKEN)):
+                break
         return s[0:s.rfind(":")].split("|")
 
     def fill_sf(self, token):
