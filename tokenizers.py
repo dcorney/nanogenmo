@@ -9,8 +9,8 @@ from util import START_TOKEN, END_TOKEN
 # E.g. {tokens: ["PERSON" "said" to "PERSON" "'" "Hello" "there" "PERSON"] ,
 #       people: ["John" "Mary" "Mary"], locations: [], organisations :[]}
 
-st = StanfordNERTagger("/Users/dcorney/nltk_data/stanford-ner-2014-06-16/classifiers/english.all.3class.distsim.crf.ser.gz",
-                       "/Users/dcorney/nltk_data/stanford-ner-2014-06-16/stanford-ner-3.4.jar")
+st = StanfordNERTagger("resources/stanford-ner-2014-06-16/classifiers/english.all.3class.distsim.crf.ser.gz",
+                       "resources/stanford-ner-2014-06-16/stanford-ner-3.4.jar")
 
 
 def ner_tags(tokens):
