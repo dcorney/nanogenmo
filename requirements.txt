@@ -1,0 +1,6 @@
+boto3==1.4.1
+nltk==3.2.1
+numpy==1.11.2
+gutenberg==0.4.5
+redis==2.10.5
+wikipedia==1.4.0
