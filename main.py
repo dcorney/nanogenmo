@@ -4,19 +4,16 @@ import paragraphs
 import random
 import text_loader
 import story
-import sys
-sys.path.append("/Users/dcorney/github/dc/Gutenberg" )
+
 import gutenburg_utils as guten
-# NB: Full install of gutenburg requries BSD-DB which I don't want/need
-# So just add the source files to the sys.path and import...
+
 
 def test():
     mcW = mc.MarkovChain(order=3)
     # mcW.delete_all_in_redis_careful()
-    tl = text_loader.TextLoader(mcW)    
-    
+    tl = text_loader.TextLoader(mcW)
     tmp_file = "/tmp/guten.txt"
-    for fnum in range(101,110):
+    for fnum in range(101, 110):
         guten.from_s3(str(fnum), tmp_file)
         tl.import_file_SIMPLE(tmp_file)
     seq = mcW.generate_sentence(mcW.random_entry())
@@ -27,10 +24,11 @@ def test():
 def main():
     mcW = mc.MarkovChain(order=3)
     # mcW.delete_all_in_redis_careful()
-    # tl = text_loader.TextLoader(mcW)
+    tl = text_loader.TextLoader(mcW)
+    tl.import_file_s3("141")
     # tl.import_file_s3("103")
-    # tl.import_file_s3("108")
-    # tl.import_file_s3("139")
+    # tl.import_file_s3("145")
+    # tl.import_file_s3("171")
     # mcW.ner_report()
     # path = '/Users/dcorney/Documents/books/'
     # tl.import_all(path)
@@ -62,7 +60,7 @@ def main():
         seeds = paragraphs.phrases_from_wiki(word, 3, random.randint(3, 10))
         p = paragraphs.phrases_to_para(seeds, mcW)
         print("  " + p)
-#    story.phrase_to_blog("test", story.phrase(), mcW)
+    # story.phrase_to_blog("test_NER1", story.phrase(), mcW)
 
 
 if __name__ == '__main__':

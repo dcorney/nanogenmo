@@ -64,12 +64,11 @@ def tokenize_sentence(s):
     ner_tags = st.tag(tk_list)
     merged_tags = process_ner_tags(ner_tags)
     tokens_entities = tokens_to_types(merged_tags)
-
     tokens_entities['tokens'].insert(0, START_TOKEN)
     tokens_entities['tokens'].append(END_TOKEN)
     return tokens_entities
 
-
+# TODO: move string labels into vars (org="ORGANIZATION" etc)
 def tokenize(text):
     """
     Split text into sentences; then split sentences into tokens.
@@ -82,7 +81,7 @@ def tokenize(text):
     for s in sents:
         # all_tokens.append(tokenize_sentence(s))
         tokens_entities = tokenize_sentence(s)
-        if count > 10:
+        if count > 10:  # Skip first few sentences - may be contents page? Bit messy...
             tokens = tokens_entities['tokens']
             entities = tokens_entities['entities']
             flattened_tokens += (tokens)
@@ -95,7 +94,6 @@ def tokenize(text):
             print(s)
             print(tokens)
             print(entities)
-        if count > 75:
+        if count > 125:
             break
     return {'tokens': flattened_tokens, 'entities': merged_entities}
-
