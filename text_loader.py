@@ -56,6 +56,9 @@ class TextLoader(object):
         s3_utils.from_s3(key_number, filename)
         with open(filename, 'r') as myfile:
             in_text = myfile.read().replace('\n', ' ')
+        if len(in_text) < 200:
+            print('No text found in ' + filename)
+            return
         print(in_text[0:100])
         tokens_entities = tokenizers.tokenize(in_text)
         self._model.train_words(tokens_entities['tokens'])

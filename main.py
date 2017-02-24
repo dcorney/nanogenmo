@@ -4,7 +4,7 @@ import paragraphs
 import random
 import text_loader
 import story
-
+from timeit import default_timer as timer
 import gutenburg_utils as guten
 
 
@@ -22,13 +22,15 @@ def test():
 
 
 def main():
+    start = timer()
     mcW = mc.MarkovChain(order=3)
     # mcW.delete_all_in_redis_careful()
     tl = text_loader.TextLoader(mcW)
-    tl.import_file_s3("141")
-    # tl.import_file_s3("103")
-    # tl.import_file_s3("145")
-    # tl.import_file_s3("171")
+    tl.import_file_s3("155")
+    tl.import_file_s3("171")
+    tl.import_file_s3("174")
+    tl.import_file_s3("204")
+    tl.import_file_s3("205")
     # mcW.ner_report()
     # path = '/Users/dcorney/Documents/books/'
     # tl.import_all(path)
@@ -61,6 +63,9 @@ def main():
         p = paragraphs.phrases_to_para(seeds, mcW)
         print("  " + p)
     # story.phrase_to_blog("test_NER1", story.phrase(), mcW)
+    end = timer()
+    print('Total elapsed time:')
+    print(end - start)  
 
 
 if __name__ == '__main__':

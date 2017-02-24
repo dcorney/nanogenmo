@@ -39,7 +39,8 @@ def wiki_text(query):
                 # stext = wiki_text(random_page)
     except:
         random_page = wikipedia.random(1)
-        text = wikipedia.summary(random_page)
+        # text = wikipedia.summary(random_page)
+        text = wikipedia.page(random_page).content # don't assume summary exists!
 
     return(text)
 
