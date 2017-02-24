@@ -94,6 +94,6 @@ def tokenize(text):
             print(s)
             print(tokens)
             print(entities)
-        if count > 125:
+        if count > 1000:
             break
     return {'tokens': flattened_tokens, 'entities': merged_entities}

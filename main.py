@@ -26,11 +26,13 @@ def main():
     mcW = mc.MarkovChain(order=3)
     # mcW.delete_all_in_redis_careful()
     tl = text_loader.TextLoader(mcW)
-    tl.import_file_s3("155")
-    tl.import_file_s3("171")
-    tl.import_file_s3("174")
-    tl.import_file_s3("204")
-    tl.import_file_s3("205")
+    for fnum in range(101, 200):
+        t1.import_file_s3(str(fnum))
+    # tl.import_file_s3("155")
+    # tl.import_file_s3("171")
+    # tl.import_file_s3("174")
+    # tl.import_file_s3("204")
+    # tl.import_file_s3("205")
     # mcW.ner_report()
     # path = '/Users/dcorney/Documents/books/'
     # tl.import_all(path)
