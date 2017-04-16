@@ -3,7 +3,6 @@ import random
 from numpy import cumsum, sum, searchsorted
 from numpy.random import rand
 from util import START_TOKEN, END_TOKEN
-import tokenizers
 import os
 import redis
 import re
@@ -20,6 +19,7 @@ class MarkovChain(object):
         self._ner_per = "PERSON"
         self._ner_org = "ORGANIZATION"
         self._ner_loc = "LOCATION"
+        self._verbosity = 0
 
     def delete_all_in_redis_careful(self):
         self._redis.flushdb()
@@ -35,14 +35,14 @@ class MarkovChain(object):
             for sub_idx in range(start, end):
                 node_from = '|'.join(sequence[sub_idx:end]) + ":fwd"
                 node_to = str(sequence[idx])
-                # print(node_from + " -> " + node_to)
+                if self._verbosity > 10: print(node_from + " -fwd> " + node_to)
                 self._redis.hincrby(node_from, node_to, 1)
             start = idx + 1
             end = min(idx + win_size + 1, len(sequence))
             for sub_idx in range(start + 1, end + 1):
                 node_from = '|'.join(sequence[start:sub_idx]) + ":back"
                 node_to = str(sequence[idx])
-                # print(node_from + " -> " + node_to)
+                if self._verbosity > 10:  print(node_from + " -back> " + node_to)
                 self._redis.hincrby(node_from, node_to, 1)
 
     def append_ner(self, entities):
@@ -64,8 +64,7 @@ class MarkovChain(object):
             node_from = '|'.join(sequence[i:i + self._order]) + ":fwd"
             node_to = sequence[i + self._order]
             self._redis.hincrby(node_from, node_to, 1)
-            r_node_from = '|'.join(
-                sequence[i + 1:i + self._order + 1]) + ":back"
+            r_node_from = '|'.join(sequence[i + 1:i + self._order + 1]) + ":back"
             r_node_to = sequence[i]
             self._redis.hincrby(r_node_from, r_node_to, 1)
 
@@ -77,7 +76,11 @@ class MarkovChain(object):
             probs = self._redis.hgetall(node_from + ":fwd")
         if (len(probs) == 0):
             if len(sequence) == 0:
-                probs = self._redis.hgetall(self._redis.randomkey())
+                #TODO: should be :back half the time:
+                while (len(probs) == 0):
+                    # TODO: not sure why this bit is needed... how can a random-entry have no probs?
+                    e = self.random_entry()
+                    probs = self._redis.hgetall('|'.join(e) + ":fwd")
             else:
                 if direction == 'reverse':
                     sub_seq = sequence[0:-1]
@@ -93,6 +96,7 @@ class MarkovChain(object):
         probs = self.get_probs(sequence, direction)
         weights = [int(x) for x in list(probs.values())]
         idx = searchsorted(cumsum(weights), rand() * sum(weights))
+        if self._verbosity > 10: print("Predicting from '" + str(sequence) + "' with " + str(len(probs)) + " probs")
         return list(probs.keys())[idx].decode("utf-8")
 
     def random_entry(self):
@@ -127,9 +131,12 @@ class MarkovChain(object):
         result = list(start)  # make a copy of start so we don't mutate it
         while result[-1] != END_TOKEN:
             new = self.predict(result[-self._order:])
+            if self._verbosity > 10: print("Generate fwd from " + str(result[0:self._order]) + " to " + new)
             result.append(new)
         while result[0] != START_TOKEN:
             new = self.predict(result[0:self._order], direction='reverse')
+
+            if self._verbosity > 10: print("Generate reverse from " + str(result[0:self._order]) + " to " + new)
             result.insert(0, new)
         result = self.polish_sentence(result)
         return result
@@ -141,3 +148,14 @@ class MarkovChain(object):
           The chance to pick the index i is given by weights[i].
         """
         return searchsorted(cumsum(weights), rand() * sum(weights))
+
+
+def test():
+    mcW = MarkovChain(order=3)
+    mcW._verbosity = 100
+    r = mcW.generate_sentence(["this","man"])
+    print(r)
+
+if __name__ == '__main__':
+    test()
+

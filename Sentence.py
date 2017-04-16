@@ -20,6 +20,7 @@ class Sentence(object):
         self._text = text
         # return {"text": self._text, "score": score}
 
+    #TODO: move this to tokenizer?
     def fix_sentence(self):
         """
         normalise quote-tokens etc.

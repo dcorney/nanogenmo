@@ -4,47 +4,40 @@ import paragraphs
 import random
 import text_loader
 import story
+import argparse
 from timeit import default_timer as timer
+import time
 import gutenburg_utils as guten
+import markov_dialogue as dialogue
 
 
-def test():
+def load():
     mcW = mc.MarkovChain(order=3)
-    # mcW.delete_all_in_redis_careful()
     tl = text_loader.TextLoader(mcW)
-    tmp_file = "/tmp/guten.txt"
-    for fnum in range(101, 110):
-        guten.from_s3(str(fnum), tmp_file)
-        tl.import_file_SIMPLE(tmp_file)
-    seq = mcW.generate_sentence(mcW.random_entry())
-    s = Sentence.Sentence(seq)
-    s.display()
+    t0 = time.perf_counter()
+    for fnum in range(160, 200):
+        tl.import_file_s3(str(fnum))
+    t1 = time.perf_counter()
+    print("Import/tokenizer total time: %.3f seconds" % (t1-t0))
+
+
+def make_random(mcW,n=3):
+        # print("\nSome postitve-scoring sentences:")
+    for i in range(n):
+        score = -1
+        while score < 0:
+            seq = mcW.generate_sentence(mcW.random_entry())
+            s = Sentence.Sentence(seq)
+            score = s._score
+        s.display()
 
 
 def main():
     start = timer()
     mcW = mc.MarkovChain(order=3)
-    # mcW.delete_all_in_redis_careful()
-    tl = text_loader.TextLoader(mcW)
-    for fnum in range(101, 200):
-        t1.import_file_s3(str(fnum))
-    # tl.import_file_s3("155")
-    # tl.import_file_s3("171")
-    # tl.import_file_s3("174")
-    # tl.import_file_s3("204")
-    # tl.import_file_s3("205")
+    
     # mcW.ner_report()
-    # path = '/Users/dcorney/Documents/books/'
-    # tl.import_all(path)
-
-    # print("\nSome postitve-scoring sentences:")
-    # for i in range(5):
-    #     score = -1
-    #     while score < 0:
-    #         seq = mcW.generate_sentence(mcW.random_entry())
-    #         s = Sentence.Sentence(seq)
-    #         score = s._score
-    #     s.display()
+    
 
     # print("\nParagraph from 3 phrases")
     # p = paragraphs.phrases_to_para(
@@ -71,4 +64,26 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--deleteredis", action='store_true',help="Delete entire REDIS index - CAREFUL!")
+    parser.add_argument("--random", type=int,help="Generate some random sentences")
+    parser.add_argument("--load", action='store_true',help="Generate some random sentences")
+    args = parser.parse_args()
+    if args.deleteredis:
+        mcW = mc.MarkovChain(order=3)
+        mcW.delete_all_in_redis_careful()
+        exit
+    if args.random:
+        mcW = mc.MarkovChain(order=3)
+        # seq = mcW.generate_sentence(mcW.random_entry())
+        # s = Sentence.Sentence(seq)
+        # s.display()
+        make_random(mcW, args.random)
+        exit
+    if args.load:
+        load()
+        exit
+
+    #main()
+
+

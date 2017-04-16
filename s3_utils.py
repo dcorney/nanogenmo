@@ -10,7 +10,10 @@ def to_s3(filename, keyname, bucket='clean-guten'):
 
 
 def from_s3(key_number, filename, bucket='clean-guten'):
-    for key in s3_client.list_objects(Bucket=bucket,
-                                      Prefix=key_number + "_")['Contents']:
-        print("Downloading " + key['Key'])
-        s3_client.download_file(bucket, key['Key'], filename)
+    try:
+        for key in s3_client.list_objects(Bucket=bucket,
+                                          Prefix=key_number + "_")['Contents']:
+            print("Downloading " + key['Key'])
+            s3_client.download_file(bucket, key['Key'], filename)
+    except:
+        print("Failed to download file " + key_number + " into " + filename)

@@ -11,7 +11,7 @@ def test():
     with open(filename, 'r', errors='ignore') as myfile:
                in_text = myfile.read().replace('\n', ' ')
 
-    processed = tokenizers.tokenize(in_text[4000:8500])
+    processed = tokenizers.tokenize(in_text[4000:4800])
     print(" ".join(processed['tokens'][0:200]))
     print(processed['entities'])
 

@@ -3,7 +3,9 @@ from nltk import word_tokenize, sent_tokenize
 from nltk.tag import StanfordNERTagger
 from util import START_TOKEN, END_TOKEN
 
-# TODO: use NER to replace PEOPLE, LOCATION, ORGANISATION tags with special tokens
+# Semi-deprecated! Try tokenizer_space instead. It's much faster...
+
+# Use NER to replace PEOPLE, LOCATION, ORGANISATION tags with special tokens
 # Then replace those with suitable tokens from another list
 # Change tokenize() to return list of tokens + lists of instances of each type
 # E.g. {tokens: ["PERSON" "said" to "PERSON" "'" "Hello" "there" "PERSON"] ,
@@ -92,7 +94,7 @@ def tokenize(text):
         if count % 25 == 0:
             print('Progress: {} / {}'.format(count, len(sents)))
             print(s)
-            print(tokens)
+            # print(tokens)
             print(entities)
         if count > 1000:
             break

@@ -1,13 +1,12 @@
 from collections import defaultdict
-import random
 from numpy import cumsum, sum, searchsorted
-from numpy.random import rand
 from util import START_TOKEN, END_TOKEN
-import tokenizers
+import tokenizer_spacy as tokenizers
 import os
 import s3_utils
 import re
 
+# TODO: maybe pass in tokenizers class as a parameter? So can switch betwen sPacy and Stanford from calling fn.?
 
 class TextLoader(object):
     """Train bi-directional Markov chain over sequences of tokens.
@@ -24,7 +23,7 @@ class TextLoader(object):
         header = in_text[0:2000]
         matches = re.search("language: English", header)
         if matches and (matches.group().find("English") < 0):
-            trimmed = ""    # skip this article entir
+            trimmed = ""    # skip this article entirely
         else:
             print(filename)
             start_point = max(0, in_text.find(
@@ -51,16 +50,20 @@ class TextLoader(object):
         Downloads pre-trimmed from from S3 to tmp, then
         reads text locally.
         '''
-        filename = "/tmp/" + key_number + ".txt"
+        filename = "/Users/dcorney/temp/" + key_number + ".txt"
         print(filename)
         s3_utils.from_s3(key_number, filename)
-        with open(filename, 'r') as myfile:
-            in_text = myfile.read().replace('\n', ' ')
+        try:
+            with open(filename, 'r') as myfile:
+                in_text = myfile.read().replace('\n', ' ')
+        except:
+            in_text = ""
         if len(in_text) < 200:
             print('No text found in ' + filename)
             return
         print(in_text[0:100])
         tokens_entities = tokenizers.tokenize(in_text)
+        # print(tokens_entities['tokens'][0:500])
         self._model.train_words(tokens_entities['tokens'])
         self._model.append_ner(tokens_entities['entities'])
 
