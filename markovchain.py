@@ -27,7 +27,7 @@ class MarkovChain(object):
     # TODO: build multiple models at once.
     # Or just n words with n-1 separators. But store all when training, and
     # replace 'order' with 'max-order'
-    def train_words(self, sequence):
+    def train_words(self, sequence, weight=1):
         win_size = 3
         for idx in range(len(sequence)):
             start = max(0, idx - win_size)
@@ -36,19 +36,29 @@ class MarkovChain(object):
                 node_from = '|'.join(sequence[sub_idx:end]) + ":fwd"
                 node_to = str(sequence[idx])
                 if self._verbosity > 10: print(node_from + " -fwd> " + node_to)
-                self._redis.hincrby(node_from, node_to, 1)
+                new_val = self._redis.hincrby(node_from, node_to, weight)
+                if new_val <= 0:
+                    self._redis.hdel(node_from, node_to)
             start = idx + 1
             end = min(idx + win_size + 1, len(sequence))
             for sub_idx in range(start + 1, end + 1):
                 node_from = '|'.join(sequence[start:sub_idx]) + ":back"
                 node_to = str(sequence[idx])
                 if self._verbosity > 10:  print(node_from + " -back> " + node_to)
-                self._redis.hincrby(node_from, node_to, 1)
+                new_val = self._redis.hincrby(node_from, node_to, weight)
+                if new_val <= 0:
+                    self._redis.hdel(node_from, node_to)
 
     def append_ner(self, entities):
         for ner_type in [self._ner_per, self._ner_org, self._ner_loc]:
             for entity in entities[ner_type]:
                 self._redis.rpush(ner_type, entity)
+
+    def unappend_ner(self, entities):
+        "Remove one copy of each entity in the list"
+        for ner_type in [self._ner_per, self._ner_org, self._ner_loc]:
+            for entity in entities[ner_type]:
+                self._redis.lrem(ner_type, 1, entity)
 
     def ner_report(self, n=2):
         print(self._redis.lrange(self._ner_per, 0, n))
@@ -97,6 +107,7 @@ class MarkovChain(object):
         weights = [int(x) for x in list(probs.values())]
         idx = searchsorted(cumsum(weights), rand() * sum(weights))
         if self._verbosity > 10: print("Predicting from '" + str(sequence) + "' with " + str(len(probs)) + " probs")
+        if self._verbosity > 15: print("idx=" + str(idx) + " len(probs)=" + (str(len(probs.keys()))) + " " + str(list(probs)[0]))
         return list(probs.keys())[idx].decode("utf-8")
 
     def random_entry(self):
@@ -107,20 +118,29 @@ class MarkovChain(object):
                 break
         return s[0:s.rfind(":")].split("|")
 
-    def fill_sf(self, token):
-        if token == '<PERSON>':
-            idx = random.randint(0, self._redis.llen(self._ner_per) - 1)
-            return self._redis.lindex(self._ner_per, idx).decode('UTF-8')
-        if token == '<ORGANIZATION>':
-            idx = random.randint(0, self._redis.llen(self._ner_org) - 1)
-            return self._redis.lindex(self._ner_org, idx).decode('UTF-8')
-        if token == '<LOCATION>':
-            idx = random.randint(0, self._redis.llen(self._ner_loc) - 1)
-            return self._redis.lindex(self._ner_loc, idx).decode('UTF-8')
-        return token
+    def random_entity(self, ner_type):
+        # if token == '<PERSON>':
+        #     idx = random.randint(0, self._redis.llen(self._ner_per) - 1)
+        #     return self._redis.lindex(self._ner_per, idx).decode('UTF-8')
+        # if token == '<ORGANIZATION>':
+        #     idx = random.randint(0, self._redis.llen(self._ner_org) - 1)
+        #     return self._redis.lindex(self._ner_org, idx).decode('UTF-8')
+        # if token == '<LOCATION>':
+        #     idx = random.randint(0, self._redis.llen(self._ner_loc) - 1)
+        #     return self._redis.lindex(self._ner_loc, idx).decode('UTF-8')
+        # return token
+        idx = random.randint(0, self._redis.llen(ner_type) - 1)
+        return self._redis.lindex(ner_type, idx).decode('UTF-8')
+
+
+    def surface_forms(self, token):
+        if token[1:-1] == self._ner_loc or token[1:-1] == self._ner_org or token[1:-1] == self._ner_per:
+            return(self.random_entity(token[1:-1]))
+        else:
+            return token
 
     def polish_sentence(self, sentence):
-        polished = [self.fill_sf(t) for t in sentence]
+        polished = [self.surface_forms(t) for t in sentence]
         return polished
 
     def generate_sentence(self, start):
@@ -153,8 +173,9 @@ class MarkovChain(object):
 def test():
     mcW = MarkovChain(order=3)
     mcW._verbosity = 100
-    r = mcW.generate_sentence(["this","man"])
-    print(r)
+    print(mcW.random_entity(mcW._ner_per))
+    #r = mcW.generate_sentence(["this","man"])
+    #print(r)
 
 if __name__ == '__main__':
     test()

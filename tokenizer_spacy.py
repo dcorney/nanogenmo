@@ -64,10 +64,9 @@ def tokenize(text):
 
     doc = nlp(" ".join(text.split()))
 
-    #Lets merge badly-split sentences
-    #Idea: if sentence starts with lower case, then merge with previous
-    #This code eventually crashes - I think the sentence index gets out of step due to merging.
-    #Soln: use a stack to store all the spans, then in a separate loop, pop & span.merge() them allx
+    # Merge badly-split sentences
+    # Idea: if sentence starts with lower case, then merge with previous
+    # Use a stack to store all the spans, then pop & span.merge() them all
     last_start=-1
     spans_to_merge = []
     for sentence in doc.sents:
@@ -76,15 +75,11 @@ def tokenize(text):
             span=doc[last_start:sentence.end]
             this_start = span.start
             spans_to_merge.append(span)
-            #span.merge()
         last_start = this_start
     for i in range(0,len(spans_to_merge)):
         span = spans_to_merge.pop()
         span.merge()
 
-
-
-    #doc = nlp(" ".join(text.split()))
     #(re-)split to sentences, to add START_TOKEN/END_TOKEN
     doc_tokens = [token for sentence in doc.sents for token in sentence_boundaries(sentence)]
 
@@ -93,7 +88,7 @@ def tokenize(text):
     #for ent in doc.ents:
         # ent.root.tag_  = pos tag;
         # label_ = GPE (place) or PERSON, ORG, CARDINAL (number) or...
-#        ent.merge(ent.root.tag_, ent.text, ent.label_)
+        # ent.merge(ent.root.tag_, ent.text, ent.label_)
     
     all_tokens = [token.text if is_plain_token(token) else "<" + type_lookup(token.ent_type_.upper()) + ">" for token in doc_tokens]
     entities = doc_to_types(doc)

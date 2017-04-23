@@ -90,9 +90,21 @@ class dialogue_maker(object):
     def report_seq(self, seq_map):
         for i in range(0, len(seq_map)):
             if seq_map[i]['paragraph']:
-                sys.stdout.write('\n')
-            sys.stdout.write((seq_map[i]['speaker_str'] + " " + seq_map[i]['speech_act'] +
-                              " '" + seq_map[i]['speech'].get_text() + "'").strip())
+                sys.stdout.write('\n    ')
+                quote_start = " '"
+            else:
+                quote_start = ""
+            if i > len(seq_map) - 2 or seq_map[i + 1]['paragraph']:
+                quote_end = "'"
+            else:
+                quote_end = " "
+            if len(seq_map[i]['speech_act']) > 0:
+                speech_act = " " + seq_map[i]['speech_act'] + ","
+            else:
+                speech_act = seq_map[i]['speech_act']
+
+            sys.stdout.write(seq_map[i]['speaker_str'] + speech_act +
+                             quote_start + seq_map[i]['speech'].get_text() + quote_end)
 
     def make_dialogue(self):
         n = len(self.seeds)
@@ -101,12 +113,14 @@ class dialogue_maker(object):
         self.report_seq(seq_map)
         return(seq_map)
 
+
 if __name__ == '__main__':
     mcW = mc.MarkovChain(order=3)
     # print(paragraphs.scored_sentence(["safe"], mcW))
 
-    phrase = "London dog dog dog safe cat cat travel train train train ship ship ship \
-    danger death death death murder rescue return return return safe London London London"
+    # phrase = "London dog dog dog safe cat cat travel train train train ship ship ship \
+    # danger death death death murder rescue return return return safe London London London"
+    phrase = "dog cat cat dog dog dog"
     seeds = phrase.split(" ")
     dm = dialogue_maker(["Alice", "Bob", "Carol", "Dan"], ["she", "he", "she", "he"], mcW, seeds)
     dm.make_dialogue()
