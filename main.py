@@ -49,7 +49,9 @@ def make_random(mcW, n=3):
 
 def make_dialoge():
     mcW = mc.MarkovChain(order=3)
-    story.make_dialogue_block(mcW)
+    text = story.make_dialogue_block(mcW)
+    title = "test-dialogue"
+    story.text_to_blog(title, text)
 
 
 def main():

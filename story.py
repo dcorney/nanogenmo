@@ -36,6 +36,17 @@ def preamble(title, phrase):
     return preamble
 
 
+def text_to_blog(title, text):
+    filename = _site_posts_path + \
+        strftime("%Y-%m-%d", gmtime()) + "-" + title + ".md"
+    text = text.replace("\n", "\n\n")
+    blog_file = open(filename, "w")
+    blog_file.write(text)
+    blog_file.close()
+    print ("Wrote " + str(len(text)) + " chars to " + filename)
+    return filename
+
+
 def phrase_to_blog(title, phrase, mcW):
     filename = _site_posts_path + \
         strftime("%Y-%m-%d", gmtime()) + "-" + title + ".md"
@@ -57,30 +68,35 @@ def make_dialogue_block(mcW):
     a prose epilogue of the people & the last seed-word."
     # phrase = "London dog dog dog safe cat cat travel train train train ship ship ship \
     # danger death death death murder rescue return return return safe London London London"
+    story = ""
     seed_phrase = random_phrase(mcW)  # "city train dog cat dog"
     init_seeds = seed_phrase.split(",")
     p_seeds = paragraphs.phrases_to_para(init_seeds[::len(init_seeds) - 1], mcW)  # Intro = first & last terms
 
-    seeds = thesaurus.expand_seeds(init_seeds, 20)
     full_cast = []
     for i in range(0, 10):
         full_cast.append(mcW.random_entity(mcW._ner_per))
     people = full_cast[0:2]
     random.shuffle(people)
     p_people = paragraphs.phrases_to_para(people, mcW)
-    print("  " + p_seeds + " " + p_people)
 
+    story += "  " + p_seeds + "\n " + p_people + "\n"
+
+    seeds = thesaurus.expand_seeds(init_seeds, 20)
     dm = dialogue.dialogue_maker(people, ["he", "he", "she", "he"], mcW, seeds)
-    dm.make_dialogue()
+    story += dm.make_dialogue()
 
     people = full_cast[0:3]
     random.shuffle(people)
     p = paragraphs.phrases_to_para(people + list(seeds[-1]), mcW)
-    print("  " + p)
+    story += "  " + p + "\n"
 
     seeds = thesaurus.expand_seeds(init_seeds, 20)
     dm = dialogue.dialogue_maker(people, ["he", "he", "she", "he"], mcW, seeds)
-    dm.make_dialogue()
+    story += dm.make_dialogue()
 
     p = paragraphs.phrases_to_para(people + list(seeds[-1]), mcW)
-    print("  " + p)
+    story += "  " + p + "\n"
+
+    print(story)
+    return story

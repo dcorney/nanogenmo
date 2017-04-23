@@ -88,6 +88,7 @@ class dialogue_maker(object):
         return seq_map
 
     def report_seq(self, seq_map):
+        text = ""
         for i in range(0, len(seq_map)):
             if seq_map[i]['paragraph']:
                 sys.stdout.write('\n    ')
@@ -103,15 +104,19 @@ class dialogue_maker(object):
             else:
                 speech_act = seq_map[i]['speech_act']
 
-            sys.stdout.write(seq_map[i]['speaker_str'] + speech_act +
-                             quote_start + seq_map[i]['speech'].get_text() + quote_end)
+            # sys.stdout.write(seq_map[i]['speaker_str'] + speech_act +
+            #                  quote_start + seq_map[i]['speech'].get_text() + quote_end)
+
+            text += seq_map[i]['speaker_str'] + speech_act +\
+                    quote_start + seq_map[i]['speech'].get_text() + quote_end + "\n"
+        return text
 
     def make_dialogue(self):
         n = len(self.seeds)
         acts = self.make_speech_bits(n)
         seq_map = self.simplify(acts)
-        self.report_seq(seq_map)
-        return(seq_map)
+        text = self.report_seq(seq_map)
+        return(text)
 
 
 if __name__ == '__main__':
